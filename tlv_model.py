@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # -----------------------------------------------------------------------------
+# I do not own this using it for the ndn Mainfest implementation
 import abc
 import struct
 from enum import Enum, Flag
