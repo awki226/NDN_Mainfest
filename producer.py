@@ -23,12 +23,13 @@ with open( userFile,'rb') as file:
 hash = hashlib.md5(packetData)
 filename = hash.hexdigest()
 consumer = subprocess.Popen(['sudo','python3.9', 'consumer2.py', filename])
-@app.route('/exec/')
+@app.route('/testBytes')
 def on_interest(name: FormalName, param: InterestParam, _app_param: Optional[BinaryStr]):
     print(f'>> I: {Name.to_str(name)}, {param}')
     content = packetData
-    app.put_data(name, content=content, freshness_period=10000)
+    app.send_intrest(name, content=content, freshness_period=10000)
     print(f'<< D: {Name.to_str(name)}')
+    app.parse_data(name, content=content, feshness_period=10000)
     print(MetaInfo(freshness_period=10000))
     print(f'Content: (size: {len(content)})')
     print('')
