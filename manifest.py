@@ -124,6 +124,22 @@ class Manifest(TlvModel):
         :param nested_manifest: a Manifest instance to be nested in this manifest
         """
         self.nested_manifests.append(nested_manifest)
+    def verify_signature(self, packet, manifest: 'Manifest') -> bool:
+        """
+        Verify the signature of a manifest.
+
+        :param packet: The packet containing the manifest.
+        :param manifest: The manifest to verify the signature of.
+        :return: True if the signature is valid, False otherwise.
+        """
+        if packet.signature_info.type != 0:
+            return False
+        key_locator = packet.signature_info.key_locator
+        if key_locator.name != manifest.name:
+            return False
+        if key_locator.key_name != manifest.name:
+            return False
+       
         
      def retrieve_manifest(self, app: NDNApp) -> 'Manifest':
     """
