@@ -125,35 +125,35 @@ class Manifest(TlvModel):
         """
         self.nested_manifests.append(nested_manifest)
         
-     async def retrieve_manifest(self, app: NDNApp) -> 'Manifest':
-        """
-        Retrieve the manifest from a remote repository.
+     def retrieve_manifest(self, app: NDNApp) -> 'Manifest':
+    """
+    Retrieve the manifest from a remote repository.
 
-        Args:
-            app: NDNApp object.
+    Args:
+        app: NDNApp object.
 
-        Returns:
-            Manifest object.
-        """
-        manifest_name = self._create_manifest_name()
+    Returns:
+        Manifest object.
+    """
+    manifest_name = self._create_manifest_name()
 
-        try:
-            data_name, meta_info, content = await app.express_interest(
-                manifest_name, need_raw_packet=True, can_be_prefix=True, lifetime=4000)
-            packet = Data.from_content(content, metainfo=meta_info)
-        except InterestTimeout:
-            raise ValueError(f"Manifest not found for: {self.name}")
-        except InterestNack as e:
-            raise ValueError(f"Manifest not found for: {self.name}") from e
+    try:
+        data_name, meta_info, content = await app.express_interest(
+            manifest_name, need_raw_packet=True, can_be_prefix=True, lifetime=4000)
+        packet = Data.from_content(content, metainfo=meta_info)
+    except InterestTimeout:
+        raise ValueError(f"Manifest not found for: {self.name}")
+    except InterestNack as e:
+        raise ValueError(f"Manifest not found for: {self.name}") from e
 
-        if packet.content is None:
-            raise ValueError(f"No content found in the manifest for: {self.name}")
+    if packet.content is None:
+        raise ValueError(f"No content found in the manifest for: {self.name}")
 
-        manifest_content = packet.content.get_value().to_bytes()
-        manifest_tlv = Tlv.decode(bytes(manifest_content))
-        manifest = Manifest.from_tlv(manifest_tlv)
+    manifest_content = packet.content.get_value().to_bytes()
+    manifest_tlv = Tlv.decode(bytes(manifest_content))
+    manifest = Manifest.from_tlv(manifest_tlv)
 
-        if not self.verify_signature(packet, manifest):
-            raise ValueError("Invalid manifest signature")
+    if not self.verify_signature(packet, manifest):
+        raise ValueError("Invalid manifest signature")
 
-        return manifest
+    return manifest
