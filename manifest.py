@@ -9,17 +9,6 @@ from ndn.security import KeychainDigest
 from ndn_python_repo import RepoCommandParameter, Version, ComponentVersion, ManifestMetaInfo, ManifestComponent
 from ndn.encoding.tlv_model import VarBinaryStr, RepeatedField, BytesField
 
-class FLIC:
-    """
-    Namespace for the TLV type assignments used in FLIC.
-    """
-    
-    class Type:
-        M_Name = 0x01
-        M_Locator = 0x02
-        M_Digest = 0x03
-        M_NestedManifest = 0x04
-
 class Manifest(TlvModel):
     """
     A class that represents a FLIC Manifest, containing various metadata and information about the data it represents.
