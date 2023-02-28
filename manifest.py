@@ -1,4 +1,4 @@
-ffrom typing import List, Tuple
+from typing import List, Tuple
 import hashlib
 import asyncio
 from ndn.encoding import Name, Component, BinaryStr, InterestParam, TlvModel, FormalName
@@ -13,6 +13,7 @@ class FLIC:
     """
     Namespace for the TLV type assignments used in FLIC.
     """
+    
     class Type:
         M_Name = 0x01
         M_Locator = 0x02
@@ -23,6 +24,40 @@ class Manifest(TlvModel):
     """
     A class that represents a FLIC Manifest, containing various metadata and information about the data it represents.
     """
+    class DataObject(TlvModel):
+        type = 130
+        digest = BytesField()
+
+    class NameComponent(TlvModel):
+        type = 7
+        value = BytesField()
+
+    class Name(TlvModel):
+        type = 128
+        components = RepeatedField(NameComponent)
+
+    class Type(TlvModel):
+        type = 129
+        value = BytesField()
+
+    class Version(TlvModel):
+        type = 131
+        value = BytesField()
+
+    class Signature(TlvModel):
+        type = 132
+        value = BytesField()
+
+    class NestedManifest(TlvModel):
+        type = 133
+        value = BytesField()
+
+    type = 1
+    data = RepeatedField(DataObject)
+    name = Name()
+    version = Version()
+    signature = Signature()
+    nested_manifest = NestedManifest()
     name = RepeatedField(BytesField(FLIC.Type.M_Name))
     locators = RepeatedField(BytesField(FLIC.Type.M_Locator))
     digests = RepeatedField(BytesField(FLIC.Type.M_Digest))
