@@ -9,6 +9,15 @@ from ndn.security import KeychainDigest
 from ndn_python_repo import RepoCommandParameter, Version, ComponentVersion, ManifestMetaInfo, ManifestComponent
 from ndn.encoding.tlv_model import VarBinaryStr, RepeatedField, BytesField
 
+class ManifestVerificationError(Exception):
+    pass
+
+class ManifestNotFoundError(Exception):
+    pass
+
+class ManifestInvalidContentError(Exception):
+    pass
+
 class Manifest(TlvModel):
     """
     A class that represents a FLIC Manifest, containing various metadata and information about the data it represents.
@@ -128,37 +137,43 @@ class Manifest(TlvModel):
             return False
         if key_locator.key_name != manifest.name:
             return False
-       
-        
-     def retrieve_manifest(self, app: NDNApp) -> 'Manifest':
-    """
-    Retrieve the manifest from a remote repository.
 
-    Args:
-        app: NDNApp object.
+        keychain = KeychainDigest()
+        key = keychain.fetch_key(name=manifest.name, hint="self")
+        if key:
+            return key.verify(packet.signature, packet.payload)
 
-    Returns:
-        Manifest object.
-    """
-    manifest_name = self._create_manifest_name()
+        return False
 
-    try:
-        data_name, meta_info, content = await app.express_interest(
-            manifest_name, need_raw_packet=True, can_be_prefix=True, lifetime=4000)
-        packet = Data.from_content(content, metainfo=meta_info)
-    except InterestTimeout:
-        raise ValueError(f"Manifest not found for: {self.name}")
-    except InterestNack as e:
-        raise ValueError(f"Manifest not found for: {self.name}") from e
+    async def retrieve_manifest(self, app: NDNApp) -> 'Manifest':
+        """
+        Retrieve the manifest from a remote repository.
 
-    if packet.content is None:
-        raise ValueError(f"No content found in the manifest for: {self.name}")
+        Args:
+            app: NDNApp object.
 
-    manifest_content = packet.content.get_value().to_bytes()
-    manifest_tlv = Tlv.decode(bytes(manifest_content))
-    manifest = Manifest.from_tlv(manifest_tlv)
+        Returns:
+            Manifest object.
+        """
+        manifest_name = self._create_manifest_name()
 
-    if not self.verify_signature(packet, manifest):
-        raise ValueError("Invalid manifest signature")
+        try:
+            data_name, meta_info, content = await app.express_interest(
+                manifest_name, need_raw_packet=True, can_be_prefix=True, lifetime=4000)
+            packet = Data.from_content(content, metainfo=meta_info)
+        except InterestTimeout:
+            raise ManifestNotFoundError(f"Manifest not found for: {self.name}")
+        except InterestNack as e:
+            raise ManifestNotFoundError(f"Manifest not found for: {self.name}") from e
 
-    return manifest
+        if packet.content is None:
+            raise ManifestInvalidContentError(f"No content found in the manifest for: {self.name}")
+
+        manifest_content = packet.content.get_value().to_bytes()
+        manifest_tlv = Tlv.decode(bytes(manifest_content))
+        manifest = Manifest.from_tlv(manifest_tlv)
+
+        if not await self.verify_signature(packet, manifest):
+            raise ManifestVerificationError("Invalid manifest signature")
+
+        return manifest
